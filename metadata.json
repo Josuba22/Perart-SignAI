@@ -1,0 +1,5 @@
+{
+  "name": "Perart SignAI - Intelligent Signature Pad",
+  "description": "Uma aplicação web profissional para captura e análise de assinaturas, alimentada pelo Google Gemini. Design responsivo, moderno e minimalista.",
+  "requestFramePermissions": []
+}
