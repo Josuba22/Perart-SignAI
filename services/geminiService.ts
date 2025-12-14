@@ -1,18 +1,31 @@
+/// <reference types="vite/client" />
 import { GoogleGenAI, Type } from "@google/genai";
 import { SignatureAnalysisResult } from "../types";
+
+/**
+ * Helper para garantir que a chave existe
+ */
+const getApiKey = () => {
+  const key = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!key) {
+    console.error("ERRO CRÍTICO: Chave da API (VITE_GEMINI_API_KEY) não encontrada.");
+    throw new Error("API Key is missing");
+  }
+  return key;
+};
 
 /**
  * Analyzes a signature image (base64) using Gemini 3 Pro Preview with Thinking Mode.
  */
 export const analyzeSignature = async (base64Image: string): Promise<SignatureAnalysisResult> => {
   try {
-    // Instantiate client here to ensure latest API key is used
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Instantiate client with the VITE specific env variable
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
     // Remove data:image/png;base64, prefix if present
     const cleanBase64 = base64Image.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
 
-    const modelId = "gemini-3-pro-preview";
+    const modelId = "gemini-2.0-flash-thinking-exp-01-21"; // Ajuste para modelo estável se o 3-preview falhar
 
     const response = await ai.models.generateContent({
       model: modelId,
@@ -38,7 +51,7 @@ export const analyzeSignature = async (base64Image: string): Promise<SignatureAn
       config: {
         // High thinking budget for deep analysis of handwriting traits
         thinkingConfig: {
-            thinkingBudget: 32768
+            thinkingBudget: 1024 // Reduzido levemente para evitar timeouts em conexões lentas
         }, 
         responseMimeType: "application/json",
         responseSchema: {
@@ -78,13 +91,12 @@ export const analyzeSignature = async (base64Image: string): Promise<SignatureAn
 export const digitizeSignature = async (base64Image: string): Promise<string> => {
   try {
     // Instantiate client here to ensure latest API key is used
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
     const cleanBase64 = base64Image.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
 
     // Use Gemini 2.5 Flash Image for robust image editing and cleanup tasks
-    // This resolves INVALID_ARGUMENT errors seen with 3-Pro-Image on specific inputs
-    const modelId = "gemini-2.5-flash-image";
+    const modelId = "gemini-2.5-flash-image"; // Verifique se sua conta tem acesso a este modelo, senão use gemini-1.5-flash
 
     const response = await ai.models.generateContent({
       model: modelId,
@@ -101,7 +113,6 @@ export const digitizeSignature = async (base64Image: string): Promise<string> =>
           },
         ],
       },
-      // No extra config needed for flash-image editing
     });
 
     // Extract the generated image from response
